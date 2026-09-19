@@ -6,7 +6,7 @@
 [![node](https://img.shields.io/node/v/gram-render)](https://www.npmjs.com/package/gram-render)
 [![evaluator](https://img.shields.io/badge/evaluator-JEV%20%C2%B7%20TypeSafe%20System%20One-8A2BE2)](https://typesafe.ai)
 
-![gram-render: prompt + context in, a live Telegram message out — edited in place on follow-up prompts](https://raw.githubusercontent.com/wei-b0/gram-render/main/assets/hero.svg)
+![gram-render vs an LLM, same prompt · same data · same schema: JEV finishes composing in under a second while the LLM is still streaming](https://raw.githubusercontent.com/wei-b0/gram-render/main/assets/compare.gif)
 
 **JEV-powered generative UI for Telegram bots.** Describe the UI you want in natural language, hand over structured data, and get back a deterministic, validated `GramSpec` — a plain-JSON Telegram interface specification your bot can compile and send.
 
