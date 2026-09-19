@@ -1,0 +1,53 @@
+{
+  "name": "gram-render",
+  "version": "0.1.0",
+  "description": "JEV-powered generative UI spec generator for Telegram bot interfaces. Prompt + context in, validated Telegram UI JSON spec out. No transport, no bot framework — the consumer owns rendering and actions.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run test/integration/jev.test.ts",
+    "example": "tsx examples/quickstart.ts",
+    "live": "tsx examples/live-telegram.ts",
+    "bot": "tsx examples/chatbot.ts",
+    "smoke:rich": "tsx examples/rich-smoke.ts"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "keywords": [
+    "telegram",
+    "generative-ui",
+    "jev",
+    "bot",
+    "ui-spec",
+    "system-one"
+  ],
+  "license": "MIT"
+}
