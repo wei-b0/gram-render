@@ -12,6 +12,8 @@
 
 **JEV-powered generative UI for Telegram bots.** Describe the UI you want in natural language, hand over structured data, and get back a deterministic, validated `GramSpec` — a plain-JSON Telegram interface specification your bot can compile and send.
 
+**Try it live → [t.me/gramrender_bot](https://t.me/gramrender_bot)** — a zero-typing playground: guided demo, fixture gallery, JSON playground, and `/inspect` to see every decision the evaluator made. Type any prompt; edit the result in place.
+
 ```
 prompt + context  ──▶  gram-render  ──▶  GramSpec (JSON)
 ```

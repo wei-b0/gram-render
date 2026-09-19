@@ -62,6 +62,7 @@ Pass a previous spec as `initialSpec` with a follow-up prompt. JEV runs a sequen
 
 ## Links
 
+- Live demo bot: [t.me/gramrender_bot](https://t.me/gramrender_bot) — zero-typing playground: guided demo, fixture gallery, JSON playground, `/inspect` decision trail
 - README (install, quick start, streaming, editing, design notes): `README.md`
 - Changelog: `CHANGELOG.md`
 - Examples (quickstart, live send/edit, showcase demo bot, rich smoke, comparison harness): `examples/`
