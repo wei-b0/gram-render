@@ -1,6 +1,6 @@
 /**
- * Quickstart: compose a Telegram status message for a small agent fleet,
- * then edit the result with a follow-up prompt.
+ * Quickstart: compose a Telegram message for a small order record, then edit
+ * the result with a follow-up prompt.
  *
  * Run with a TypeSafe key: TYPESAFE_API_KEY=apikey_… npm run example
  * (or GRAM_RENDER_API_KEY=… — see createEvaluator).
@@ -8,23 +8,26 @@
 
 import { compileClassicMessage, composeSpec, type GramSpec } from "../src/index.js";
 
-const AGENTS = [
-  { name: "cart-resolver", status: "running", uptime: "3h 12m", tasks_done: 142 },
-  { name: "mail-digest", status: "degraded", uptime: "0h 44m", tasks_done: 9 },
-  { name: "backup-worker", status: "idle", uptime: "12h 01m", tasks_done: 0 },
-];
+const ORDER = {
+  id: "#1842", customer: "Maya Patel", status: "processing", payment: "paid",
+  items: [
+    { name: "Linen shirt", qty: 2, price: "$39.00" },
+    { name: "Canvas tote", qty: 1, price: "$24.00" },
+  ],
+  total: "$102.00",
+};
 
 async function main(): Promise<void> {
   console.log("=== compose ===\n");
 
   let spec: GramSpec | null = null;
   for await (const event of composeSpec({
-    prompt: 'Show these agents. Quote "Agent fleet" as the heading and surface actions for the degraded one.',
+    prompt: 'Show this order. Quote "Order #1842" as the heading. Expose the actions.',
     context: {
-      agents: AGENTS,
+      order: ORDER,
       actions: [
-        { label: "Restart mail-digest", action: "restart_agent", payload: { agent: "mail-digest" }, style: "primary" },
-        { label: "View logs", action: "view_logs", payload: { agent: "mail-digest" } },
+        { label: "Mark as packed", action: "mark_packed", payload: { order: "#1842" }, style: "primary" },
+        { label: "Cancel order", action: "cancel_order", payload: { order: "#1842" }, style: "danger" },
       ],
     },
   })) {
@@ -58,9 +61,9 @@ async function main(): Promise<void> {
 
   console.log("\n=== edit ===\n");
   for await (const event of composeSpec({
-    prompt: 'Remove the logs action. Also add a divider and the text "All systems monitored".',
+    prompt: 'Remove the cancel action. Also add a divider and the text "Packed orders ship daily".',
     initialSpec: spec,
-    context: { agents: AGENTS },
+    context: { order: ORDER },
   })) {
     if (event.type === "step") {
       console.log(`[step ${event.step.index}] ${event.step.description}`);

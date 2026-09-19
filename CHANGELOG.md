@@ -14,6 +14,7 @@ Initial release.
 - **Compile targets** — `compileClassicMessage` (Bot API classic HTML + inline keyboard) and `compileRichMessage` (Bot API 10.1–10.3 Rich Messages blocks: tables, footer, expandable quotes, in-flow button blocks). Button `callback_data` semantics identical across targets.
 - **Derivation** — candidates derived internally from `prompt + context`: quoted strings → headings/buttons/links, context scalars → field/status/note lines, arrays → list / per-item sections / uniform-records table representations, ISO-8601 and date-keyed epoch humanizing, URL detection, `context.actions` → buttons, standard low-priority buttons.
 - **Validation** — tree checks (dangling/shared refs, slots, depth, budgets), prop schemas, per-target Telegram limit checks (classic: 4096 chars, 64-byte `callback_data`; rich: 32,768 chars, 500 blocks, 8 buttons/block), typed `GramRenderError` hierarchy.
-- **Evaluator adapter** — `createEvaluator` (zero-SDK `fetch` wrapper for the TypeSafe API) with injectable custom `Evaluator`.
-- **Examples** — quickstart, live Telegram send/edit, to-fro demo chatbot, Rich Messages smoke + wire-format probes.
-- Tests: 140 unit assertions (fake evaluator, no network) + env-gated integration tests against the live API.
+- **Evaluator adapter** — `createEvaluator`, the default evaluator (zero-SDK `fetch` wrapper for the TypeSafe API); injectable custom `Evaluator` via the `evaluate` option.
+- **Examples** — quickstart, live Telegram send/edit, Rich Messages smoke + wire-format probes, and an interactive showcase demo bot (`examples/demo-bot`: guided demo, 5-fixture gallery, JSON playground, `/inspect` decision trail with confidences; consumer-side only, not part of the package).
+- **AI-assistant index** — an `llms.txt` summarizing the API, catalog, and constraints ships in the package.
+- Tests: 193 unit assertions (fake evaluator, no network) + env-gated integration tests against the live API.

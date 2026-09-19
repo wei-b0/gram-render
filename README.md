@@ -1,5 +1,13 @@
 # gram-render
 
+[![npm](https://img.shields.io/npm/v/gram-render)](https://www.npmjs.com/package/gram-render)
+[![npm downloads](https://img.shields.io/npm/dm/gram-render)](https://www.npmjs.com/package/gram-render)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/wei-b0/gram-render/blob/main/LICENSE)
+[![node](https://img.shields.io/node/v/gram-render)](https://www.npmjs.com/package/gram-render)
+[![evaluator](https://img.shields.io/badge/evaluator-JEV%20%C2%B7%20TypeSafe%20System%20One-8A2BE2)](https://typesafe.ai)
+
+![gram-render: prompt + context in, a live Telegram message out — edited in place on follow-up prompts](https://raw.githubusercontent.com/wei-b0/gram-render/main/assets/hero.svg)
+
 **JEV-powered generative UI for Telegram bots.** Describe the UI you want in natural language, hand over structured data, and get back a deterministic, validated `GramSpec` — a plain-JSON Telegram interface specification your bot can compile and send.
 
 ```
@@ -27,23 +35,36 @@ npm install gram-render
 
 Node ≥ 20. The only runtime dependency is `zod`.
 
-You need a TypeSafe API key ([console.typesafe.ai](https://console.typesafe.ai/settings/keys)) — pass `apiKey`, or set `GRAM_RENDER_API_KEY` / `TYPESAFE_API_KEY`.
+For AI coding assistants, an [`llms.txt`](llms.txt) index of the API ships in the package and lives at the repo root.
+
+You need a TypeSafe API key ([console.typesafe.ai](https://console.typesafe.ai/settings/keys)). The default `createEvaluator()` reads it from its `apiKey` option, or from the `GRAM_RENDER_API_KEY` / `TYPESAFE_API_KEY` environment variables.
 
 ## Quick start
 
 ```ts
-import { render, compileClassicMessage } from "gram-render";
+import { render, createEvaluator, compileClassicMessage } from "gram-render";
+
+// The default evaluator: resolves the TypeSafe API key (apiKey option, else
+// GRAM_RENDER_API_KEY / TYPESAFE_API_KEY) and performs the JEV calls.
+const evaluate = createEvaluator();
 
 const result = await render({
-  prompt: 'Show these agents. Quote "Agent fleet" as the heading.',
+  evaluate,
+  prompt: 'Show this order. Quote "Order #1842" as the heading. Expose the actions.',
   context: {
-    agents: [
-      { name: "cart-resolver", status: "running", uptime: "3h 12m" },
-      { name: "mail-digest",   status: "degraded", uptime: "0h 44m" },
-    ],
+    order: {
+      id: "#1842", customer: "Maya Patel", status: "processing", payment: "paid",
+      items: [
+        { name: "Linen shirt", qty: 2, price: "$39.00" },
+        { name: "Canvas tote", qty: 1, price: "$24.00" },
+      ],
+      total: "$102.00",
+    },
     actions: [
-      { label: "Restart mail-digest", action: "restart_agent",
-        payload: { agent: "mail-digest" }, style: "primary" },
+      { label: "Mark as packed", action: "mark_packed",
+        payload: { order: "#1842" }, style: "primary" },
+      { label: "Cancel order", action: "cancel_order",
+        payload: { order: "#1842" }, style: "danger" },
     ],
   },
 });
@@ -55,16 +76,47 @@ if (result.stopReason === "finish" && result.spec) {
 }
 ```
 
-The compiled message for this fixture:
+A typical compiled message for this fixture (JEV chooses the layout, so details vary run to run):
 
 ```
-<b>Agent fleet</b>
+<b>Order #1842</b>
 
-• cart-resolver — running
-• mail-digest — degraded
+<b>Order</b>
+<b>ID:</b> #1842
+<b>Customer:</b> Maya Patel
+ℹ️ Status: processing
+✅ Payment: paid
+<b>Total:</b> $102.00
+• Linen shirt
+• Canvas tote
 
-[Restart mail-digest]  ← callback_data '["restart_agent",{"agent":"mail-digest"}]'
+[Mark as packed] [Cancel order]   ← callback_data '["mark_packed",{"order":"#1842"}]'
 ```
+
+### Prompt-only renders
+
+`context` is optional. With no data, the only content source is what you quote in the prompt — JEV composes the structure and picks the blocks, but it never authors a word:
+
+```ts
+const result = await render({
+  evaluate,
+  prompt: 'A tiny welcome card for the coffee shop "Daily Grind". Offer "Order pickup" and "Opening hours" as buttons.',
+});
+
+if (result.stopReason === "finish" && result.spec) {
+  const payload = compileClassicMessage(result.spec); // same as before
+}
+```
+
+A typical compiled message for that prompt (JEV chooses the layout, so details vary run to run):
+
+```
+<b>Daily Grind</b>
+
+[Order pickup] [Opening hours]   ← callback_data 'order_pickup' / 'opening_hours'
+```
+
+A prompt with nothing quotable (no quoted strings, no context) returns `stopReason: "unavailable"` — an empty result instead of an invented card. That is the never-authors property working in both directions: quotes are the content, and without them there is nothing to show.
 
 ### Streaming
 
@@ -87,9 +139,9 @@ Pass a generated (or hand-written) spec back with `initialSpec` and a follow-up 
 
 ```ts
 const edited = await render({
-  prompt: "Remove the logs action.",
+  prompt: "Remove the cancel action.",
   initialSpec: result.spec,
-  context: { agents },
+  context: { order },
 });
 ```
 
@@ -116,7 +168,7 @@ Streaming variant: `step` events (kind `select` | `layout` | `edit`, description
 | `prompt` | — (required) | ≤ 4000 chars. Quoted `"…"` strings become heading/button candidates. |
 | `context` | — | Structured data. Every displayed string comes from here or the prompt. |
 | `initialSpec` | — | Switches to the sequential edit loop. |
-| `evaluate` | TypeSafe adapter | Inject a custom `Evaluator` (same request shape as json-render's). |
+| `evaluate` | `createEvaluator()` | The evaluator used for every JEV call. Inject a custom `Evaluator` to override (same request shape as json-render's). |
 | `guidance` | — | `{ select?, layout?, edit? }` nudges forwarded in evaluator state. |
 | `minConfidence` | off | When set (0–1), a fulfillability answer below the gate returns `unavailable` (JEV signals near-coin-flips with very low confidence). |
 | `limits` | see below | `{ maxElements: 24, maxDepth: 3, maxCandidates: 40, maxSteps: 16, maxContextChars: 8000 }`. |
@@ -124,7 +176,7 @@ Streaming variant: `step` events (kind `select` | `layout` | `edit`, description
 
 ### `createEvaluator(options)`
 
-The default TypeSafe adapter — a ~100-line `fetch` wrapper (no SDK dependency; `gram-render` ships with `zod` only). `EvaluatorOptions`: `apiKey?`, `baseURL?`, `model?` (default `jev-latest`), `timeoutMs?` (default 10 000), `fetch?` (inject a mock). HTTP errors surface as typed `EvaluatorError`s; there are no internal retries.
+The default evaluator — a ~100-line `fetch` wrapper for the TypeSafe API (no SDK dependency; `gram-render` ships with `zod` only). It is constructed automatically when `evaluate` is omitted, and exported so you can build it explicitly (as in the quick start), share one instance across calls, or configure it: `apiKey?` (else `GRAM_RENDER_API_KEY` / `TYPESAFE_API_KEY`), `baseURL?` (else `TYPESAFE_BASE_URL`; default `https://api.typesafe.ai`), `model?` (else `TYPESAFE_DEFAULT_MODEL`; default `jev-latest`), `timeoutMs?` (default 10 000), `fetch?` (inject a mock). HTTP errors surface as typed `EvaluatorError`s; there are no internal retries.
 
 ## GramSpec
 
@@ -135,13 +187,15 @@ A flat tree — one `Message` root, keyed elements, ordered children. Plain JSON
   "version": 1,
   "root": "m1",
   "elements": {
-    "m1": { "type": "Message", "props": {}, "children": ["n1", "n2"], "keyboard": ["r1"] },
-    "n1": { "type": "Heading", "props": { "text": "Agent fleet" } },
-    "n2": { "type": "Section", "props": { "title": "mail-digest" }, "children": ["n3", "n4"] },
-    "n3": { "type": "Status",  "props": { "level": "warning", "text": "Status: degraded" } },
-    "n4": { "type": "Field",   "props": { "label": "Uptime", "value": "0h 44m" } },
-    "r1": { "type": "ButtonRow", "props": {}, "children": ["n5"] },
-    "n5": { "type": "Button", "props": { "label": "Restart", "action": "restart_agent", "payload": { "agent": "mail-digest" }, "style": "primary" } }
+    "m1": { "type": "Message", "props": {}, "children": ["n1", "n2", "n3"], "keyboard": ["r1"] },
+    "n1": { "type": "Heading", "props": { "text": "Order #1842" } },
+    "n2": { "type": "Status",  "props": { "level": "info", "text": "Status: processing" } },
+    "n3": { "type": "Section", "props": { "title": "Delivery" }, "children": ["n4", "n5"] },
+    "n4": { "type": "Field",   "props": { "label": "Method", "value": "Courier" } },
+    "n5": { "type": "Field",   "props": { "label": "ETA", "value": "Sep 23–24" } },
+    "r1": { "type": "ButtonRow", "props": {}, "children": ["n6", "n7"] },
+    "n6": { "type": "Button", "props": { "label": "Mark as packed", "action": "mark_packed", "payload": { "order": "#1842" }, "style": "primary" } },
+    "n7": { "type": "Button", "props": { "label": "Cancel order", "action": "cancel_order", "payload": { "order": "#1842" }, "style": "danger" } }
   }
 }
 ```
@@ -229,7 +283,7 @@ npm test                 # unit — fake evaluator, no network
 npm run test:integration # real JEV (needs TYPESAFE_API_KEY), skipped otherwise
 npm run example          # quickstart demo (needs TYPESAFE_API_KEY)
 npm run live             # send + edit one live Telegram message (.env: TELEGRAM_BOT_TOKEN)
-npm run bot              # to-fro demo chatbot wrapper (same .env) — see examples/chatbot.ts
+npm run bot              # interactive showcase bot (examples/demo-bot, same .env)
 npm run smoke:rich       # live Rich Messages smoke + undocumented-behavior probes (same .env)
 ```
 

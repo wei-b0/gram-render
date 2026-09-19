@@ -41,11 +41,14 @@ function loadDotEnv(path: string): void {
 }
 loadDotEnv(fileURLToPath(new URL("../.env", import.meta.url)));
 
-const AGENTS = [
-  { name: "cart-resolver", status: "running", uptime: "3h 12m", tasks_done: 142 },
-  { name: "mail-digest", status: "degraded", uptime: "0h 44m", tasks_done: 9 },
-  { name: "backup-worker", status: "idle", uptime: "12h 01m", tasks_done: 0 },
-];
+const ORDER = {
+  id: "#1842", customer: "Maya Patel", status: "processing", payment: "paid",
+  items: [
+    { name: "Linen shirt", qty: 2, price: "$39.00" },
+    { name: "Canvas tote", qty: 1, price: "$24.00" },
+  ],
+  total: "$102.00",
+};
 
 // --- Telegram transport (the part gram-render deliberately does not contain) ---
 
@@ -127,12 +130,12 @@ async function run(): Promise<void> {
 
   console.log("\n=== 1/2 compose + sendMessage ===");
   const first = await render({
-    prompt: 'Show these agents. Quote "Agent fleet" as the heading. Expose actions for the degraded agent.',
+    prompt: 'Show this order. Quote "Order #1842" as the heading. Expose the actions.',
     context: {
-      agents: AGENTS,
+      order: ORDER,
       actions: [
-        { label: "Restart mail-digest", action: "restart_agent", payload: { agent: "mail-digest" }, style: "primary" },
-        { label: "View logs", action: "view_logs", payload: { agent: "mail-digest" } },
+        { label: "Mark as packed", action: "mark_packed", payload: { order: "#1842" }, style: "primary" },
+        { label: "Cancel order", action: "cancel_order", payload: { order: "#1842" }, style: "danger" },
       ],
     },
   });
@@ -148,9 +151,9 @@ async function run(): Promise<void> {
   console.log("\n=== 2/2 edit spec + editMessageText (the message changes live) ===");
   await new Promise((resolve) => setTimeout(resolve, 2000));
   const edited = await render({
-    prompt: 'Remove the logs action. Add a divider and the text "All systems monitored".',
+    prompt: 'Remove the cancel action. Add a divider and the text "Packed orders ship daily".',
     initialSpec: first.spec,
-    context: { agents: AGENTS },
+    context: { order: ORDER },
   });
   if (edited.stopReason !== "finish" || !edited.spec) {
     console.log(`Edit unavailable (stopReason=${edited.stopReason}); live message left as-is.`);

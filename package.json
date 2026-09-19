@@ -15,27 +15,44 @@
   },
   "files": [
     "dist",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "llms.txt"
   ],
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p examples/comparison/video",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run test/integration/jev.test.ts",
     "example": "tsx examples/quickstart.ts",
     "live": "tsx examples/live-telegram.ts",
-    "bot": "tsx examples/chatbot.ts",
-    "smoke:rich": "tsx examples/rich-smoke.ts"
+    "bot": "tsx examples/demo-bot/main.ts",
+    "smoke:rich": "tsx examples/rich-smoke.ts",
+    "compare:run": "tsx examples/comparison/run.ts",
+    "compare:video": "tsx examples/comparison/render.ts",
+    "compare": "npm run compare:run && npm run compare:video"
   },
   "dependencies": {
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "@fontsource/noto-emoji": "^5.3.1",
+    "@remotion/bundler": "^4.0.526",
+    "@remotion/cli": "^4.0.526",
+    "@remotion/renderer": "^4.0.526",
     "@types/node": "^26.6.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "openai": "^6.49.0",
+    "partial-json": "^0.1.7",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.526",
     "tsup": "^8.5.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
@@ -49,5 +66,13 @@
     "ui-spec",
     "system-one"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wei-b0/gram-render.git"
+  },
+  "homepage": "https://github.com/wei-b0/gram-render#readme",
+  "bugs": {
+    "url": "https://github.com/wei-b0/gram-render/issues"
+  },
   "license": "MIT"
 }

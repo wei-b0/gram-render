@@ -95,6 +95,21 @@ describe("deriveCandidates", () => {
     expect(items).toBeDefined();
   });
 
+  it("compacts object list items with their quantity and price", () => {
+    const result = deriveCandidates("Show the order.", {
+      items: [
+        { name: "Canvas Backpack", quantity: 1, price: "$54.00" },
+        { name: "Travel Bottle", quantity: 2, price: "$15.25" },
+      ],
+    });
+    const list = result.candidates.find((candidate) => candidate.id === "list_items")!;
+    expect(list.element.type).toBe("List");
+    expect(list.element.props["items"]).toEqual([
+      "Canvas Backpack ×1 — $54.00",
+      "Travel Bottle ×2 — $15.25",
+    ]);
+  });
+
   it("derives link buttons for URL values (top-level variant and nested include)", () => {
     // Top-level scalar: URL becomes one variant option of the line question.
     const topLevel = deriveCandidates("Show the doc.", { url: "https://example.com/guide" });

@@ -1,0 +1,67 @@
+# gram-render
+
+> JEV-powered generative-UI spec generator for Telegram bot interfaces. Prompt + optional context in, a validated GramSpec out; deterministic compilers turn that one spec into either Bot API classic HTML messages or Bot API 10.1–10.3 Rich Messages. No transport, no bot framework, no action execution — the consumer owns Telegram I/O and callbacks. JEV (TypeSafe System One discrete-choice evaluation) only ever chooses between pre-derived blocks; it never authors text.
+
+## Install and key setup
+
+```bash
+npm install gram-render
+```
+
+Node ≥ 20. Runtime dependency: `zod` only. A TypeSafe API key is required ([console.typesafe.ai](https://console.typesafe.ai/settings/keys)); the default evaluator reads the `apiKey` option, or `GRAM_RENDER_API_KEY` / `TYPESAFE_API_KEY` env vars.
+
+## Core loop
+
+```ts
+import { render, createEvaluator, compileClassicMessage } from "gram-render";
+const evaluate = createEvaluator();
+
+const result = await render({
+  evaluate,
+  prompt: 'Show this order. Quote "Order #1842" as the heading. Expose the actions.',
+  context: { /* plain JSON data */ }, // optional
+});
+
+if (result.stopReason === "finish" && result.spec) {
+  const payload = compileClassicMessage(result.spec);
+  // { text, parse_mode: "HTML", reply_markup: { inline_keyboard } }
+  // → send via your own Bot API client (bot framework, fetch, framework of choice)
+}
+```
+
+`RenderResult`: `stopReason` (`finish` | `limit` | `unavailable`), `spec` (GramSpec | null), `calls`, `elapsedMs`, `inputTokens`, `warnings[]`, `steps[]` (per-decision `kind`/`description`/`confidence`/`answers`). `context` is optional: with no data, quoted strings in the prompt are the only content source; nothing quotable yields `stopReason: "unavailable"` rather than invented content.
+
+## Edit mode
+
+Pass a previous spec as `initialSpec` with a follow-up prompt. JEV runs a sequential operation loop (`remove` / `replace` / `move` / `add` / `finish`, ≈1 evaluator call per operation); unaffected elements keep their ids and props, so consumers can re-send only what changed.
+
+## GramSpec shape
+
+`{ version: 1, root: "<id>", elements: Record<id, { type, props, children?: string[] }> }` — a flat id-referenced tree. The root `Message` carries `keyboard: string[]` (ButtonRow element ids). Parse/serialize with `parseGramSpec` / `serializeGramSpec`; hand-built specs must pass `parseGramSpec`.
+
+## Component catalog (15)
+
+`Message`, `Heading` (section headings), `Text`, `Section` (groups content lines; no nesting), `Divider`, `Field` (`label`/`value`, optional `mono`), `List`, `Status` (semantic level: info/success/error via a known status vocabulary), `Code`, `Quote` (incl. expandable in rich), `Alert`, `Table` (uniform records), `Note`, `ButtonRow`, `Button` (`label` + `action` (+ `payload`, `style`: primary/success/danger) or `url`). Slots and depth are enforced: content children are constrained per type, tree depth ≤ 3. Full prop schemas: `CATALOG` export or `src/catalog/components.ts`.
+
+## Telegram limits enforced by the compilers
+
+- Classic: 4096 plain characters; `callback_data` ≤ 64 bytes (`serializeCallbackData(action, payload)` = `JSON.stringify([action, payload])`).
+- Rich (`RICH_LIMITS`): 32 768 chars, ≤ 500 blocks (lists/tables expand), ≤ 8 buttons per buttons block.
+- Composition inputs: context ≤ 8000 chars (evaluator state), prompt ≤ 4000 chars.
+- `inspectClassicMessage` / `inspectRichMessage` return `{ message | payload, diagnostics: { errors, warnings } }` for pre-send checks; `telegramDiagnostics` is the shared backend.
+
+## API surface (package root)
+
+`render`, `composeSpec` (streaming AsyncIterable of validated intermediate specs), `createEvaluator` (default TypeSafe evaluator; inject a custom `Evaluator` via the `evaluate` option), `deriveCandidates` (pure; the same derivation JEV sees), `compileClassicMessage`, `compileRichMessage`, `inspectClassicMessage`, `inspectRichMessage`, `serializeCallbackData`, `parseGramSpec`, `serializeGramSpec`, `CATALOG`, `describeElement`, `telegramDiagnostics`, `RICH_LIMITS`, `GramRenderError` (+ `EvaluatorError`, `CompositionError`, `ValidationError`).
+
+## Rules that do not bend
+
+- JEV never authors text. Every rendered string is (a) context data, (b) a quoted prompt string, (c) a key-derived label, or (d) a catalog-standard label. Candidates carry literal props; JEV chooses.
+- gram-render never talks to Telegram and never executes actions. Buttons carry intent (`action` + `payload`); the consumer's callback handler owns behavior and re-rendering.
+- One GramSpec compiles to both targets. Same spec, classic HTML and Rich Messages, identical `callback_data` semantics.
+
+## Links
+
+- README (install, quick start, streaming, editing, design notes): `README.md`
+- Changelog: `CHANGELOG.md`
+- Examples (quickstart, live send/edit, showcase demo bot, rich smoke, comparison harness): `examples/`

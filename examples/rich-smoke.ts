@@ -64,7 +64,7 @@ async function tgRaw(method: string, body: unknown): Promise<TgResponse> {
   return (await res.json()) as TgResponse;
 }
 
-// --- fixture specs (agent-fleet flavored; every one of the 15 catalog components) ---
+// --- fixture specs (order flavored; every one of the 15 catalog components) ---
 
 function fullSpec(): GramSpec {
   return {
@@ -77,37 +77,37 @@ function fullSpec(): GramSpec {
         children: ["h1", "t1", "tb1", "s1", "st1", "c1", "al1", "ls1", "q1", "q2", "n1"],
         keyboard: ["r1", "r2"],
       },
-      h1: { type: "Heading", props: { text: "Agent fleet" } },
-      t1: { type: "Text", props: { text: "Live view mirrored from the upstream server." } },
+      h1: { type: "Heading", props: { text: "Order #1842" } },
+      t1: { type: "Text", props: { text: "Fulfillment snapshot for customer Maya Patel." } },
       tb1: {
         type: "Table",
         props: {
-          columns: ["Agent", "Status", "cwd"],
+          columns: ["Item", "Qty", "Price"],
           rows: [
-            ["cart-resolver", "🟢 working", "~/work/app"],
-            ["mail-digest", "🔶 degraded", "~/work/mail"],
-            ["backup-worker", "⚪ idle", "/srv/backup"],
+            ["Linen shirt", "2", "$39.00"],
+            ["Canvas tote", "1", "$24.00"],
+            ["Gift wrap", "1", "$5.00"],
           ],
           compact: true,
         },
       },
-      s1: { type: "Section", props: { title: "mail-digest" }, children: ["f1", "f2", "f3", "q2"] },
-      f1: { type: "Field", props: { label: "Status", value: "degraded" } },
-      f2: { type: "Field", props: { label: "Pane", value: "pane-7", mono: true } },
-      f3: { type: "Field", props: { label: "cwd", value: "~/work/mail", mono: true } },
-      st1: { type: "Status", props: { level: "info", text: "3 agents online" } },
-      c1: { type: "Code", props: { text: "WARN  imap fetch retry 3/5\nERROR smtp relay timeout (relay-2)", language: "log" } },
-      al1: { type: "Alert", props: { level: "warning", title: "Degraded", text: "mail-digest needs attention" } },
-      ls1: { type: "List", props: { items: ["Approve the restart", "View logs", "Ignore for 1h"], ordered: true } },
+      s1: { type: "Section", props: { title: "Delivery" }, children: ["f1", "f2", "f3", "q2"] },
+      f1: { type: "Field", props: { label: "Status", value: "processing" } },
+      f2: { type: "Field", props: { label: "Courier", value: "EX-4417", mono: true } },
+      f3: { type: "Field", props: { label: "Tracking", value: "1Z999AA10123456784", mono: true } },
+      st1: { type: "Status", props: { level: "info", text: "Payment confirmed — $102.00 (paid)" } },
+      c1: { type: "Code", props: { text: "12:41  courier assigned (EX-4417)\n12:44  shipping label printed\n12:47  handoff scheduled for 14:00–18:00", language: "log" } },
+      al1: { type: "Alert", props: { level: "warning", title: "Signature required", text: "Courier needs a signature on delivery" } },
+      ls1: { type: "List", props: { items: ["Pick items from shelf B2", "Pack with padding", "Hand to courier EX-4417"], ordered: true } },
       q1: { type: "Quote", props: { text: "Nothing is invented — every string comes from your data or your prompt." } },
-      q2: { type: "Quote", props: { text: "Full startup log: 47 lines since 08:00.", expandable: true } },
+      q2: { type: "Quote", props: { text: "Full audit trail: 47 events since 08:41.", expandable: true } },
       n1: { type: "Note", props: { text: "Spec composed by gram-render, compiled to Rich Messages." } },
       r1: { type: "ButtonRow", props: {}, children: ["b1", "b2", "b3"] },
-      b1: { type: "Button", props: { label: "Restart mail-digest", action: "restart_agent", payload: { agent: "mail-digest" }, style: "primary" } },
-      b2: { type: "Button", props: { label: "Docs", url: "https://core.telegram.org/bots/api" } },
-      b3: { type: "Button", props: { label: "Off", disabled: true } },
+      b1: { type: "Button", props: { label: "Mark as packed", action: "mark_packed", payload: { order: "#1842" }, style: "primary" } },
+      b2: { type: "Button", props: { label: "Track shipment", url: "https://www.example.com/track/1Z999AA10123456784" } },
+      b3: { type: "Button", props: { label: "Cancel order", disabled: true } },
       r2: { type: "ButtonRow", props: {}, children: ["b4"] },
-      b4: { type: "Button", props: { label: "View logs", action: "view_logs", payload: { agent: "mail-digest" } } },
+      b4: { type: "Button", props: { label: "View audit trail", action: "view_audit", payload: { order: "#1842" } } },
     },
   };
 }
@@ -115,10 +115,10 @@ function fullSpec(): GramSpec {
 /** Edited variant: proves editMessageText(rich_message) replaces content in place. */
 function editedSpec(): GramSpec {
   const spec = fullSpec();
-  (spec.elements["h1"]!.props as { text: string }).text = "Agent fleet — 1 restarted";
-  (spec.elements["tb1"]!.props as { rows: string[][] }).rows[1] = ["mail-digest", "🟢 running", "~/work/mail"];
-  (spec.elements["f1"]!.props as { value: string }).value = "running";
-  spec.elements["al1"] = { type: "Status", props: { level: "success", text: "mail-digest is healthy" } } as never;
+  (spec.elements["h1"]!.props as { text: string }).text = "Order #1842 — packed";
+  (spec.elements["tb1"]!.props as { rows: string[][] }).rows[1] = ["Canvas tote", "1", "$24.00 (packed)"];
+  (spec.elements["f1"]!.props as { value: string }).value = "packed";
+  spec.elements["al1"] = { type: "Status", props: { level: "success", text: "Order is fully packed" } } as never;
   return spec;
 }
 

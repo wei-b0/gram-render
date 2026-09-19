@@ -72,6 +72,10 @@ const DEFAULTS = { maxCandidates: 40, maxItemsPerArray: 8 };
 const PRIMARY_KEYS = ["name", "title", "id", "key", "label", "username", "email", "slug"];
 /** Scalar context keys whose value is likely a footnote/hint. */
 const NOTE_KEYS = new Set(["hint", "note", "footer", "tip", "caption"]);
+/** Scalar context keys whose numeric value is likely a per-item count. */
+const QUANTITY_KEYS = ["quantity", "qty", "count"];
+/** Scalar context keys whose value is likely a per-item price or cost. */
+const PRICE_KEYS = ["price", "cost", "unit_price"];
 /** Max characters per derived table cell. */
 const TABLE_CELL_MAX = 48;
 const STANDARD_BUTTONS: Array<{ label: string; action: string }> = [
@@ -508,7 +512,26 @@ export function deriveCandidates(
       const status = recognizeStatus(statusEntry[0], formatValue(statusEntry[1])!)!;
       return `${primary} — ${status.label}`;
     }
-    return primary;
+    // Compact lines carry the item's count and price when the record has
+    // them — a name-only list hides exactly the fields compaction exists
+    // to summarize.
+    let quantity = "";
+    for (const key of QUANTITY_KEYS) {
+      const value = record[key];
+      if (typeof value === "number" && Number.isFinite(value)) {
+        quantity = ` ×${value}`;
+        break;
+      }
+    }
+    let price = "";
+    for (const key of PRICE_KEYS) {
+      const formatted = formatValue(record[key]);
+      if (formatted !== undefined) {
+        price = ` — ${formatted}`;
+        break;
+      }
+    }
+    return `${primary}${quantity}${price}`;
   }
 
   /**
